@@ -1,0 +1,53 @@
+version: "3.7"
+
+services:
+  metricbeat:
+    hostname: metricbeat
+    build: .
+    depends_on:
+      - logstash
+    networks:
+      - metricbeat
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup
+      - /proc:/hostfs/proc
+      - /:/hostfs
+    environment:
+      - KIBANA_HOST="kibana:80"
+      - ELASTIC_HOST="elasticsearch:9200"
+
+  logstash:
+    build: test/logstash
+    depends_on:
+      - elasticsearch
+    networks:
+      - metricbeat
+    ports:
+      - "5044:5044"
+    logging:
+      driver: none
+
+  kibana:
+    build: test/kibana
+    depends_on:
+      - elasticsearch
+    networks:
+      - metricbeat
+    ports:
+      - "5601:5601"
+    logging:
+      driver: none
+
+  elasticsearch:
+    build: test/elasticsearch
+    networks:
+      - metricbeat
+    logging:
+      driver: none
+
+  generate-logs:
+    build: test/generate-logs
+
+networks:
+  metricbeat:
